@@ -40,8 +40,8 @@ clone_usb() {
     done
     
     usb_serial=$(udevadm info --query=all --name="$drive" | grep -E "ID_SERIAL_SHORT" | awk -F= '{print $2}')
-    id_vendor=$(printf "0x%04x" $(udevadm info --query=all --name="$drive" | grep -E "ID_VENDOR_ID" | awk -F= '{print $2}'))
-    id_product=$(printf "0x%04x" $(udevadm info --query=all --name="$drive" | grep -E "ID_MODEL_ID" | awk -F= '{print $2}'))
+    id_vendor=$(udevadm info --query=all --name="$drive" | grep -E "ID_VENDOR_ID" | awk -F= '{print "0x"$2}')
+    id_product=$(udevadm info --query=all --name="$drive" | grep -E "ID_MODEL_ID" | awk -F= '{print "0x"$2}')
     
     if [ -z "$usb_serial" ] || [ -z "$id_vendor" ] || [ -z "$id_product" ]; then
         echo "Could not retrieve all required information for $drive."
