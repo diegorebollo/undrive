@@ -10,7 +10,7 @@ header() {
         | |_| || | | || (_| || |   | | \ V /|  __/
          \__,_||_| |_| \__,_||_|   |_|  \_/  \___|
 
-  A simple bash script to get rid of your Unraid USB boot drive
+  A simple bash script to get rid of your Unraid USB Boot Drive
 
 EOF
 }
@@ -40,11 +40,14 @@ clone_usb() {
     done
     
     usb_serial=$(udevadm info --query=all --name="$drive" | grep -E "ID_SERIAL_SHORT" | awk -F= '{print $2}')
-    if [ -z "$usb_serial" ]; then
-        echo "Could not retrieve the serial number for $drive."
-        exit 1        
+    id_vendor=$(udevadm info --query=all --name="$drive" | grep -E "ID_VENDOR_ID" | awk -F= '{print $2}')
+    id_product=$(udevadm info --query=all --name="$drive" | grep -E "ID_MODEL_ID" | awk -F= '{print $2}')
+    
+    if [ -z "$usb_serial" ] || [ -z "$id_vendor" ] || [ -z "$id_product" ]; then
+        echo "Could not retrieve all required information for $drive."
+        exit 1
     fi
-
+    
     image_file=${image_file:-/var/lib/vz/images/undrive.img}
     
     # Check if the directory exists
@@ -85,23 +88,30 @@ main() {
         exit 1
     fi
     
-    mkdir /root/undrive
-    cd /root/undrive
+    current_dir=$(pwd)
+    
+    mkdir $current_dir/undrive
+    cd $current_dir/undrive
     git clone https://github.com/xairy/raw-gadget.git > /dev/null 2>&1
     cd raw-gadget/dummy_hcd
     make > /dev/null 2>&1
     cp dummy_hcd.ko /lib/modules/$(uname -r)/kernel/drivers/usb/gadget/
     depmod -a
-         
+    
     clone_usb
-
-    echo "options g_mass_storage file=$image_file idVendor=0x0781 idProduct=0x5567 iManufacturer=Undrive iProduct=Undrive Virtual USB iSerialNumber=$usb_serial" > /etc/modprobe.d/undrive.conf
+    
+    cat > /etc/modprobe.d/undrive.conf << EOF
+install dummy_hcd /sbin/modprobe --ignore-install dummy_hcd; /bin/sleep 1
+install g_mass_storage /sbin/modprobe --ignore-install g_mass_storage
+options g_mass_storage file=$image_file idVendor$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB
+EOF
+    
     echo -e 'dummy_hcd\ng_mass_storage' >> /etc/modules-load.d/modules.conf
     modprobe dummy_hcd g_mass_storage
-
-    rm -rf /root/undrive  
-
-    echo -e "Done! :)" 
+    
+    rm -r $current_dir/undrive
+    
+    echo -e "Done! :)"
     
 }
 
