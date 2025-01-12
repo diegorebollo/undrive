@@ -103,7 +103,7 @@ main() {
     cat > /etc/modprobe.d/undrive.conf << EOF
 install dummy_hcd /sbin/modprobe --ignore-install dummy_hcd; /bin/sleep 1
 install g_mass_storage /sbin/modprobe --ignore-install g_mass_storage
-options g_mass_storage file=$image_file idVendor$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB
+options g_mass_storage file=$image_file idVendor=$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB
 EOF
     
     echo -e 'dummy_hcd\ng_mass_storage' >> /etc/modules-load.d/modules.conf
