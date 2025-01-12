@@ -40,8 +40,8 @@ clone_usb() {
     done
     
     usb_serial=$(udevadm info --query=all --name="$drive" | grep -E "ID_SERIAL_SHORT" | awk -F= '{print $2}')
-    id_vendor=$(udevadm info --query=all --name="$drive" | grep -E "ID_VENDOR_ID" | awk -F= '{print $2}')
-    id_product=$(udevadm info --query=all --name="$drive" | grep -E "ID_MODEL_ID" | awk -F= '{print $2}')
+    id_vendor=$(printf "0x%04x" $(udevadm info --query=all --name="$drive" | grep -E "ID_VENDOR_ID" | awk -F= '{print $2}'))
+    id_product=$(printf "0x%04x" $(udevadm info --query=all --name="$drive" | grep -E "ID_MODEL_ID" | awk -F= '{print $2}'))
     
     if [ -z "$usb_serial" ] || [ -z "$id_vendor" ] || [ -z "$id_product" ]; then
         echo "Could not retrieve all required information for $drive."
@@ -103,11 +103,13 @@ main() {
     cat > /etc/modprobe.d/undrive.conf << EOF
 install dummy_hcd /sbin/modprobe --ignore-install dummy_hcd; /bin/sleep 1
 install g_mass_storage /sbin/modprobe --ignore-install g_mass_storage
-options g_mass_storage file=$image_file idVendor=$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB
+options g_mass_storage file=$image_file idVendor=$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB iSerialNumber=$usb_serial
 EOF
     
     echo -e 'dummy_hcd\ng_mass_storage' >> /etc/modules-load.d/modules.conf
-    modprobe dummy_hcd g_mass_storage
+    
+    modprobe dummy_hcd
+    modprobe g_mass_storage
     
     rm -r $current_dir/undrive
     
