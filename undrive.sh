@@ -12,6 +12,8 @@ header() {
 
   A simple bash script to get rid of your Unraid USB Boot Drive
 
+  *** A bit outdated. Must ./update from raw-gadget/dummy_hcd ***
+
 EOF
 }
 
@@ -101,8 +103,8 @@ main() {
     clone_usb
     
     cat > /etc/modprobe.d/undrive.conf << EOF
-install dummy_hcd /sbin/modprobe --ignore-install dummy_hcd; /bin/sleep 1
-install g_mass_storage /sbin/modprobe --ignore-install g_mass_storage
+install dummy_hcd /sbin/modprobe --ignore-install dummy_hcd; /bin/sleep 3
+install g_mass_storage /bin/sleep 2; /sbin/modprobe --ignore-install g_mass_storage
 options g_mass_storage file=$image_file idVendor=$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB iSerialNumber=$usb_serial
 EOF
     
