@@ -108,10 +108,28 @@ install g_mass_storage /bin/sleep 2; /sbin/modprobe --ignore-install g_mass_stor
 options g_mass_storage file=$image_file idVendor=$id_vendor idProduct=$id_product iManufacturer=Undrive iProduct=UndriveVirtualUSB iSerialNumber=$usb_serial
 EOF
     
-    echo -e 'dummy_hcd\ng_mass_storage' >> /etc/modules-load.d/modules.conf
-    
-    modprobe dummy_hcd
-    modprobe g_mass_storage
+    # Load via systemd instead of modules-load.d: the image may live on a
+    # ZFS dataset that is not mounted yet when modules-load.d runs.
+    cat > /etc/systemd/system/undrive.service << EOF
+[Unit]
+Description=Undrive virtual USB (g_mass_storage)
+After=zfs-mount.service local-fs.target
+RequiresMountsFor=$(dirname "$image_file")
+Before=pve-guests.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/modprobe dummy_hcd
+ExecStart=/sbin/modprobe g_mass_storage
+ExecStop=/sbin/modprobe -r g_mass_storage
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    systemctl enable --now undrive.service
     
     rm -r $current_dir/undrive
     
